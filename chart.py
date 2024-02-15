@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.manifold import TSNE
 import plotly.express as px
 import plotly.graph_objects as go
-
+# from sklearn.neighbors import KNeighborsClassifier
 # from constants_app import LABEL_COMMENTAIRE_UTILISATEUR
 
 

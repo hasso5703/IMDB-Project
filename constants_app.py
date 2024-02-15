@@ -5,6 +5,7 @@ from typing import Final
 from constants import FICHIER_COMMENTAIRE_PLONGEMENT, FICHIER_RESEAU_NEURONE
 from language_model import ModeleLangage
 from tensorflow.keras.models import load_model
+from sklearn.neighbors import KNeighborsClassifier
 
 """
 ===========================================================================

@@ -141,14 +141,21 @@ def mettre_a_jour_figure_projection(nb_max_commentaire_par_film: int, min_max_mo
 
 @application.callback(
     Output('Graph_prediction_film', 'figure'),
-    Input('Store_donnees_partage', 'data')
+    Input('Store_donnees_partage', 'data'),
+    Input('RadioItems_methode_prediction_film', 'value')
 )
 def mettre_a_jour_figure_prediction(
-        donnees_partage: dict) -> go.Figure:  # {'commentaire': commentaire, 'plongement': plongement} ou {}
+        donnees_partage: dict, selected_method: str) -> go.Figure:  # {'commentaire': commentaire, 'plongement':
+    # plongement} ou {}
 
     if donnees_partage:
         plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split').to_numpy()
-        probabilite = RESEAU_NEURONE.predict(plongement)[0]
+        if selected_method == 'réseau de neurones':
+            probabilite = RESEAU_NEURONE.predict(plongement)[0]
+        elif selected_method == 'KNN (K-PPV)':
+            knn_model = KNeighborsClassifier(n_neighbors=5)
+            # knn_model.fit(plongement, y_train)
+            probabilite = knn_model.predict_proba(plongement)[0]
         # dictionnaire_films = {}
         dictionnaire_films = {nom_film: proba for nom_film, proba in zip(LISTE_FILMS, probabilite)
                               if nom_film in donnees_partage.get('films_selectionnees', [])}
@@ -160,9 +167,9 @@ def mettre_a_jour_figure_prediction(
         somme_probabilites = sum(probabilite)
         probabilite = [prob / somme_probabilites for prob in probabilite]
     else:
-        NB_TITRE = 5
+        NB_TITRE = len(LISTE_FILMS_INITIAL)
         probabilite = [1 / NB_TITRE for i in range(NB_TITRE)]
-        modalite = LISTE_FILMS[:NB_TITRE]
+        modalite = LISTE_FILMS_INITIAL
 
     figure = generer_graphique_prediction_film(pd.Series(probabilite, index=modalite))
     return figure
