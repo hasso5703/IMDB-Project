@@ -1,0 +1,8 @@
+pandas==2.1.4
+plotly==5.9.0
+scikit-learn==1.2.2
+dash==2.14.2
+tensorflow==2.15.0
+numpy==1.26.3
+torch==2.2.0
+matplotlib==3.8.0
