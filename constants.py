@@ -15,8 +15,7 @@ FICHIER_RESEAU_NEURONE: Final[str] = Path(DOSSIER_MODELS) / 'best_model_384_14-0
 FICHIER_FILMS_LIST: Final[str] = Path(DOSSIER_DATA) / 'films_list.pkl'
 
 MIN_MAX_MOT_INITIAL: Final[tuple[int, int]] = (100, 300)
-NB_MAX_COMMENTAIRE_PAR_FILM_INITIAL: Final[int] = 300
-
+NB_MAX_COMMENTAIRE_PAR_FILM_INITIAL: Final[int] = 55
 PERPLEXITE_TSNE_INITIAL: Final[float] = 5
 DISTANCE_TSNE_INITIAL: Final[str] = 'cosine'
 
