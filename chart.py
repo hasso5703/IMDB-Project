@@ -32,10 +32,22 @@ def generer_graphique_projection(commentaire_plongement: pd.DataFrame,
     figure = px.scatter(data_frame=coord_titre, x='x', y='y', color='titre', labels={'x': '', 'y': ''},
                         hover_name='titre', hover_data={'titre': False, 'x': False, 'y': False, 'review': True})
 
-    if selected_method == 'KNN (K-PPV)':
-        indices = calculer_plus_proches_voisins(coord, commentaire_plongement)
-    else:
-        indices = tuple()
+    # if selected_method == 'KNN (K-PPV)':
+    #    print("coord : ", coord)
+    #    print("commentaire plongements : ", commentaire_plongement)
+    #    indices = calculer_plus_proches_voisins(coord, commentaire_plongement)
+    # else:
+    indices = tuple()
+
+    nbrs = NearestNeighbors(n_neighbors=6, metric=distance).fit(coord)
+    print("coord : ", coord)
+    distances, indices = nbrs.kneighbors(coord)
+    print("indices -1 : ", list(indices[-1]))
+    nearest_movies_names = [coord_titre.iloc[list(indices[-1])]['titre']]
+    print(len(nearest_movies_names))
+    print(nearest_movies_names)
+    print(type(nearest_movies_names))
+
     return figure, indices
 
 
@@ -43,40 +55,16 @@ def generer_graphique_prediction_film(probabilite: pd.Series) -> go.Figure:
     return go.Figure(data=[go.Bar(x=probabilite.index, y=probabilite)])
 
 
-def calculer_plus_proches_voisins2(coord, coord_titre):
-    print(len(coord))
-    coord_2d = coord[:-1]
-    coord_2d = coord_2d.reshape(-1, 2)
-    print("len cord2s: ", len(coord_2d))
-    voisins = NearestNeighbors(n_neighbors=len(coord_2d), algorithm='auto').fit(coord_2d)
-    _, indices = voisins.kneighbors(coord_2d[-1].reshape(1, -1))
-    indices = indices.tolist()[0]
-    print(len(indices))
-    indices = indices[:5]
-    print("indices : ")
-    print(indices)
-    print("coord_titre : ")
-    print(coord_titre)
-    lst = coord_titre.titre.tolist()[:-1]
-    print("lst : ")
-    print(lst)
-    print("len lst : ", len(lst))
-    films = [lst[i] for i in range(len(lst)) if i in indices]
-    film_names = set(lst)
-    print("film_names : ")
-    print(film_names)
-    occurences = [films.count(film) for film in film_names]
-    print("occurences : ")
-    print(occurences)
-    return indices
-
-
 def calculer_plus_proches_voisins(coord, coord_titre):
     coord_2d = coord[:-1, :2]
+    print("coord2d : ", coord_2d)
     voisins = NearestNeighbors(n_neighbors=len(coord_2d), algorithm='auto').fit(coord_2d)
     _, indices = voisins.kneighbors(coord_2d[-1].reshape(1, -1))
+    print("indices : ", indices)
     indices = indices.tolist()[0]
+    print("indices.tolist 0", indices)
     indices = indices[:5]
+    print("indices 5 : ", indices)
     films_proches = coord_titre.iloc[indices]['titre'].tolist()
-    print(films_proches)
+    print("films proches : ", films_proches)
     return films_proches
