@@ -33,7 +33,7 @@ def generer_graphique_projection(commentaire_plongement: pd.DataFrame,
                         hover_name='titre', hover_data={'titre': False, 'x': False, 'y': False, 'review': True})
 
     if selected_method == 'KNN (K-PPV)':
-        nbrs = NearestNeighbors(n_neighbors=11, metric=distance).fit(coord)
+        nbrs = NearestNeighbors(n_neighbors=6, metric=distance).fit(coord)
         distances, indices = nbrs.kneighbors(coord)
         nearest_movies_names = coord_titre.iloc[indices[-1]]["titre"]
         list_films = nearest_movies_names.tolist()[1:]
