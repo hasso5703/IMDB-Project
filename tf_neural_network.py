@@ -28,7 +28,7 @@ if __name__ == "__main__":
     label_encoder = LabelEncoder()
     y_encoded = label_encoder.fit_transform(y)
     print("train test split ....")
-    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.1, shuffle=True, random_state=33)
+    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.1, shuffle=True, random_state=24)
     del X, y, y_encoded, df
 
     INPUT_SHAPE = X_train.shape[1]
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     current_time_str = current_time.strftime("%d-%m-%Y_%H-%M-%S")
 
     epochs = 100
-    batch_size = 512
+    batch_size = 128
     lr = 0.0001
 
     model_name = str(Path(DOSSIER_MODELS) / ("model_" + str(INPUT_SHAPE) + "_batch_" + str(batch_size) +
@@ -65,12 +65,12 @@ if __name__ == "__main__":
     model = Sequential()
 
     model.add(BatchNormalization(input_shape=(INPUT_SHAPE,)))
-    model.add(Dense(768, kernel_initializer='he_normal'))
+    model.add(Dense(512, kernel_initializer='he_normal'))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
     model.add(BatchNormalization())
-    model.add(Dense(384, kernel_initializer='he_normal'))
+    model.add(Dense(256, kernel_initializer='he_normal'))
     model.add(Activation('relu'))
     # model.add(Dropout(0.5))
 

@@ -16,7 +16,7 @@ from sklearn.neighbors import NearestNeighbors
 def generer_graphique_projection(commentaire_plongement: pd.DataFrame,
                                  perplexite: float,
                                  distance: str,
-                                 selected_method: str) -> dict[Any, Any] | tuple[Figure, Any]:
+                                 selected_method: str) -> Figure:
     if commentaire_plongement.shape[0] < 10:
         return {}
     perplexite = min(perplexite, commentaire_plongement.shape[0] - 1)
@@ -32,20 +32,7 @@ def generer_graphique_projection(commentaire_plongement: pd.DataFrame,
     figure = px.scatter(data_frame=coord_titre, x='x', y='y', color='titre', labels={'x': '', 'y': ''},
                         hover_name='titre', hover_data={'titre': False, 'x': False, 'y': False, 'review': True})
 
-    if selected_method == 'KNN (K-PPV)':
-        nbrs = NearestNeighbors(n_neighbors=6, metric=distance).fit(coord)
-        distances, indices = nbrs.kneighbors(coord)
-        nearest_movies_names = coord_titre.iloc[indices[-1]]["titre"]
-        list_films = nearest_movies_names.tolist()[1:]
-        list_films_name = list(set(coord_titre.titre.tolist()[:-1]))
-        occurences = [list_films.count(film) for film in list_films_name]
-        print(list_films_name)
-        print(occurences)
-    else:
-        occurences = list()
-        list_films_name = list()
-
-    return figure, (list_films_name, occurences)
+    return figure
 
 
 def generer_graphique_prediction_film(probabilite: pd.Series) -> go.Figure:

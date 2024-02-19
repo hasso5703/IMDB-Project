@@ -4,6 +4,8 @@ from dash import Dash, Input, Output, State, html, dcc
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 # import pandas as pd
+import numpy as np
+from sklearn.neighbors import NearestNeighbors
 # test
 from constants_app import *
 from comments import filtrer_commentaire
@@ -82,7 +84,7 @@ application.layout = dbc.Container(
         ),
         dbc.Row(dbc.Col(pied_de_page)),
         dcc.Store(id='Store_donnees_partage', storage_type='session', data={}),
-        dcc.Store(id='Liste_voisins', storage_type='session', data={})
+        dcc.Store(id='Donnees_knn', storage_type='session', data={})
     ],
     fluid=True,
 )
@@ -109,7 +111,7 @@ def stocker_commentaire_utilisateur(n_click: int, commentaire: str, liste_films:
 
 @application.callback(
     Output('Graph_projection', 'figure'),
-    Output('Liste_voisins', 'data'),
+    Output('Donnees_knn', 'data'),
     Input('Slider_nombre_commentaire', 'value'),
     Input('RangeSlider_nombre_mot', 'value'),
     Input('Slider_perplexite', 'value'),
@@ -132,32 +134,43 @@ def mettre_a_jour_figure_projection(nb_max_commentaire_par_film: int, min_max_mo
         df_filtre = df_filtre.query("titre in @LISTE_FILMS_INITIAL")
         # df_filtre[df_filtre['titre'].isin(LISTE_FILMS_INITIAL)]
 
+    if selected_method == "KNN (K-PPV)":
+        print("df filtres", df_filtre)
+        all_embeddings = df_filtre.loc[:, 'V_000':].values
+        labels = df_filtre.titre.values
+        k = 5
+        knn_model = KNeighborsClassifier(n_neighbors=k, weights='distance')
+        knn_model.fit(all_embeddings, labels)
+        df_plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split')
+        nouveau_plongement = df_plongement.loc[:, 'V_000':].values
+        probabilites = knn_model.predict_proba(nouveau_plongement)
+        classes = knn_model.classes_
+        print(classes)
+        print(probabilites)
+        donnees_knn = {'probabilites': probabilites, 'modalites': classes}
+    else:
+        donnees_knn = {}
+
     if donnees_partage:
         df_plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split')
         df_une_ligne = pd.DataFrame(
             {'titre': [LABEL_COMMENTAIRE_UTILISATEUR], 'rating': [-1], 'review': [donnees_partage['commentaire']]})
         df_une_ligne = pd.concat([df_une_ligne, df_plongement], axis=1)
-        # print("df une ligne : ")
-        # print(df_une_ligne)
         df_filtre = pd.concat([df_filtre, df_une_ligne])
 
-    figure, (list_films_name, occurences) = generer_graphique_projection(df_filtre, perplexite=perplexite, distance=distance,
-                                                   selected_method=selected_method)
-    print("ici")
-    print(list_films_name)
-    print(occurences)
-    return figure, {'nom_films': list_films_name, 'occurences': occurences}
+    figure = generer_graphique_projection(df_filtre, perplexite=perplexite, distance=distance,
+                                          selected_method=selected_method)
+
+    return figure, donnees_knn
 
 
 @application.callback(
     Output('Graph_prediction_film', 'figure'),
     State('Store_donnees_partage', 'data'),
-    Input('Liste_voisins', 'data'),
+    Input('Donnees_knn', 'data'),
     State('RadioItems_methode_prediction_film', 'value')
 )
-def mettre_a_jour_figure_prediction(
-        donnees_partage: dict, liste_indices: dict, selected_method: str) -> go.Figure:
-
+def mettre_a_jour_figure_prediction(donnees_partage: dict, donnees_knn: dict, selected_method: str) -> go.Figure:
     if donnees_partage:
         if selected_method == 'réseau de neurones':
             plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split').to_numpy()
@@ -169,11 +182,9 @@ def mettre_a_jour_figure_prediction(
             somme_probabilites = sum(probabilite)
             probabilite = [prob / somme_probabilites for prob in probabilite]
         else:
-            modalite = liste_indices.get('nom_films')
-            print(modalite)
-            occurences = liste_indices.get('occurences')
-            probabilite = [nb/sum(occurences) for nb in occurences]
-            print(probabilite)
+            if donnees_knn:
+                probabilite = donnees_knn.get('probabilites', [])[0]
+                modalite = donnees_knn.get('modalites', [])
     else:
         NB_TITRE = len(LISTE_FILMS_INITIAL)
         probabilite = [1 / NB_TITRE for i in range(NB_TITRE)]
@@ -198,6 +209,7 @@ def toggle_alert(selected_films):
 )
 def toggle_alert(n_clicks, input_text):
     return n_clicks and (input_text is None or input_text.strip() == '')
+
 
 """
 ===========================================================================
