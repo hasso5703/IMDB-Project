@@ -9,6 +9,17 @@ onglet 'Projection'
 """
 card_projection = dbc.Card(
     [
+        html.H4("Choix de la méthode:", className='card-title'),
+        dcc.Dropdown(
+            id='Dropdown_method_reduction',
+            options=[
+                {'label': 'Analyse en Composantes Principales (ACP)', 'value': 'ACP'},
+                {'label': 't-Distributed Stochastic Neighbor Embedding (t-SNE)', 'value': 't-SNE'},
+                {'label': 'Multidimensionnal scaling', 'value': 'Mult'}
+            ],
+            value='t-SNE',
+            clearable=False
+        ),
         html.H4("Perplexité de la méthode T-SNE:", className='card-title'),
         dcc.Slider(
             id='Slider_perplexite',

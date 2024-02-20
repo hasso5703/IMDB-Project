@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 # import pandas as pd
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import KNeighborsClassifier
 # test
 from constants_app import *
 from comments import filtrer_commentaire
@@ -14,6 +14,8 @@ from chart import generer_graphique_projection, generer_graphique_prediction_fil
 from data_tab import *
 from projection_tab import *
 from film_prediction_tab import *
+from interest_prediction_tab import *
+from tab_temporalite import *
 
 """
 ===========================================================================
@@ -45,7 +47,9 @@ tabs = dbc.Tabs(
     [
         dbc.Tab([card_donnees], tab_id='Tab_donnees', label='Données'),
         dbc.Tab([card_projection], tab_id='Tab_projection', label='Projection', className='pb-4'),  # padding bottom
-        dbc.Tab([card_prediction_film], tab_id='Tab_prediction_film', label='Prédiction film')
+        dbc.Tab([card_prediction_film], tab_id='Tab_prediction_film', label='Prédiction film'),
+        dbc.Tab([card_interest_prediction], tab_id='Tab_interest_prediction', label='Prédiction intérêt'),
+        dbc.Tab([card_temporalite], tab_id='Tab_temporalite', label='Temporalité')
     ],
     id='Tabs', active_tab='Tab_projection', className='mt-2'  # margin-top
 )
@@ -73,7 +77,9 @@ application.layout = dbc.Container(
                         html.H4("Projection T-SNE"),
                         dcc.Graph(id='Graph_projection', figure={}),
                         html.H4("Prédiction du film"),
-                        dcc.Graph(id='Graph_prediction_film', figure={})
+                        dcc.Graph(id='Graph_prediction_film', figure={}),
+                        html.H4("Evolution commentaires"),
+                        dcc.Graph(id='Graph_evolution', figure={}),
                     ],
                     width=12,
                     lg=7,
@@ -135,7 +141,6 @@ def mettre_a_jour_figure_projection(nb_max_commentaire_par_film: int, min_max_mo
         # df_filtre[df_filtre['titre'].isin(LISTE_FILMS_INITIAL)]
 
     if selected_method == "KNN (K-PPV)":
-        print("df filtres", df_filtre)
         all_embeddings = df_filtre.loc[:, 'V_000':].values
         labels = df_filtre.titre.values
         k = 5
@@ -145,8 +150,6 @@ def mettre_a_jour_figure_projection(nb_max_commentaire_par_film: int, min_max_mo
         nouveau_plongement = df_plongement.loc[:, 'V_000':].values
         probabilites = knn_model.predict_proba(nouveau_plongement)
         classes = knn_model.classes_
-        print(classes)
-        print(probabilites)
         donnees_knn = {'probabilites': probabilites, 'modalites': classes}
     else:
         donnees_knn = {}
@@ -194,6 +197,27 @@ def mettre_a_jour_figure_prediction(donnees_partage: dict, donnees_knn: dict, se
     return figure
 
 
+# Callback pour effectuer la prédiction lorsque l'utilisateur soumet un commentaire
+@application.callback(
+    Output('Graph_interet_film', 'figure'),
+    State('Store_donnees_partage', 'data'),
+    Input("button_interet", "n_clicks")
+)
+def prediction_interet(donnees_partage: dict, n_clicks: int):
+    if donnees_partage and n_clicks > 0:
+        plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split').to_numpy()
+        prediction = RESEAU_NEURONE_RATING.predict(plongement)[0]
+        print(prediction)
+        interet = "oui" if max(prediction) == prediction[1] else "non"
+        prediction_str = "intérêt : "+str(interet)
+    else:
+        prediction_str = "intérêt : ..."
+        prediction = [0, 0]
+    figure = generer_graphique_prediction_film(pd.Series(prediction, index=["non", "oui"]))
+
+    return figure
+
+
 @application.callback(
     Output('alert', 'is_open'),
     Input('liste_deroulante', 'value')
@@ -210,6 +234,67 @@ def toggle_alert(selected_films):
 def toggle_alert(n_clicks, input_text):
     return n_clicks and (input_text is None or input_text.strip() == '')
 
+"""
+@application.callback(
+    Output('Graph_evolution', 'figure'),
+    Input('RadioItems_methode_prediction_film', 'n_clicks'),
+    Input('RadioItems_methode_prediction_film', 'value'),
+    State('DateRangePicker_dates_bornes', 'start_date'),
+    State('DateRangePicker_dates_bornes', 'end_date')
+)
+def mettre_a_jour_figure_evolution(donnees_partage: dict, methode_selectionnee: str, start_date: str,
+                                   end_date: str) -> go.Figure:
+    films = LISTE_FILMS
+    annees_uniques = []
+    mois_et_annees_uniques = []
+    nombres_commentaires = []
+
+    for film in films:
+        df = pd.read_csv(chemin_fichier)
+
+        # Convertir la colonne 'date' en datetime en spécifiant le format littéral
+        df['date'] = pd.to_datetime(df['date'], format='%d %B %Y')
+        annees_uniques.extend(df['date'].dt.year.unique().tolist())
+        # Grouper les revues par année:mois
+        if methode_selectionnee == "années":
+            reviews = df.groupby(df['date'].dt.year).size().tolist()
+        elif methode_selectionnee == "mois":
+            reviews = df.groupby(df['date'].dt.month).size().tolist()
+        nombres_commentaires.append(reviews)
+        mois_et_annees = df['date'].dt.strftime('%m-%Y').unique().tolist()
+        mois_et_annees_uniques.extend(mois_et_annees)
+
+    print("Nombre de commentaires pour chaque film par année :", nombres_commentaires)
+    annees_uniques = sorted(list(set(annees_uniques)))
+    mois_et_annees_uniques = sorted(list(set(mois_et_annees_uniques)))
+    if methode_selectionnee == "années":
+        temps = annees_uniques
+    elif methode_selectionnee == "mois":
+        temps = mois_et_annees_uniques
+    # Création des traces pour chaque film
+    data = []
+    for i, film in enumerate(films):
+        trace = go.Scatter(
+            # à changer de mois ou année selon le bouton
+            x=temps,
+            y=nombres_commentaires[i],
+            mode='lines+markers',
+            name=film
+        )
+        data.append(trace)
+
+    # Création du layout
+    layout = go.Layout(
+        title='Evolution du nombre de commentaires par film',
+        xaxis=dict(title='Temps'),
+        yaxis=dict(title='Nombre de commentaires')
+    )
+
+    # Création de la figure
+    figure = go.Figure(data=data, layout=layout)
+
+    return figure
+"""
 
 """
 ===========================================================================
