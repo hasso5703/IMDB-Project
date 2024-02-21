@@ -11,7 +11,7 @@ DOSSIER_PLONGEMENTS: Final[str] = Path(DOSSIER_DATA) / 'embeddings'
 DOSSIER_MODELS: Final[str] = Path(DOSSIER_DATA) / 'models'
 
 FICHIER_COMMENTAIRE_PLONGEMENT: Final[str] = Path(DOSSIER_PLONGEMENTS) / 'data_384.csv' # data_384.csv
-FICHIER_RESEAU_NEURONE: Final[str] = Path(DOSSIER_MODELS) / 'best_model_384_14-02-2024_17-39-53.keras' # best_model_384_14-02-2024_17-39-53.keras
+FICHIER_RESEAU_NEURONE: Final[str] = Path(DOSSIER_MODELS) / 'model_384_batch_128_lr_0001_18-02-2024_20-23-09.keras'
 FICHIER_FILMS_LIST: Final[str] = Path(DOSSIER_DATA) / 'films_list.pkl'
 FICHIER_RESEAU_NEURONE_RATING = Path(DOSSIER_MODELS) / 'rating_best_model.h5'
 FICHIER_MATRICE_CONFUSION = Path(DOSSIER_MODELS) / 'conf_matrix.pkl'
