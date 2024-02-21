@@ -15,7 +15,7 @@ FICHIER_RESEAU_NEURONE: Final[str] = Path(DOSSIER_MODELS) / 'best_model_384_14-0
 FICHIER_FILMS_LIST: Final[str] = Path(DOSSIER_DATA) / 'films_list.pkl'
 FICHIER_RESEAU_NEURONE_RATING = Path(DOSSIER_MODELS) / 'rating_best_model.h5'
 FICHIER_MATRICE_CONFUSION = Path(DOSSIER_MODELS) / 'conf_matrix.pkl'
-
+FICHIER_RESEAU_NEURONE_MLP = Path(DOSSIER_MODELS) / 'commentaire_pmc.pickle'
 MIN_MAX_MOT_INITIAL: Final[tuple[int, int]] = (100, 300)
 NB_MAX_COMMENTAIRE_PAR_FILM_INITIAL: Final[int] = 55
 PERPLEXITE_TSNE_INITIAL: Final[float] = 5

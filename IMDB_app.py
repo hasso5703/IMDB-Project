@@ -1,14 +1,18 @@
+import inspect
 from io import StringIO
 from typing import Tuple, Any
 from dash import Dash, Input, Output, State, html, dcc
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
+import os
 # import pandas as pd
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 # test
 from constants_app import *
 from comments import filtrer_commentaire
+import plotly.express as px
+from datetime import datetime
 
 from chart import generer_graphique_projection, generer_graphique_prediction_film
 from data_tab import *
@@ -124,12 +128,13 @@ def stocker_commentaire_utilisateur(n_click: int, commentaire: str, liste_films:
     Input('Dropdown_distance', 'value'),
     Input('Store_donnees_partage', 'data'),
     State('RadioItems_methode_prediction_film', 'value'),
-    State("Slider_k", "value")
+    State("Slider_k", "value"),
+    Input("Dropdown_method_projection", "value")
 )
 def mettre_a_jour_figure_projection(nb_max_commentaire_par_film: int, min_max_mot: tuple[int, int],
                                     perplexite: int, distance: str,
                                     donnees_partage: dict,
-                                    selected_method: str, k: int) -> tuple[Any, Any]:
+                                    selected_method: str, k: int, metode_projection) -> tuple[Any, Any]:
     df_filtre = filtrer_commentaire(DF_COMMENTAIRE_PLONGEMENT,
                                     nb_max_commentaire_par_film=nb_max_commentaire_par_film,
                                     min_max_mot=min_max_mot)
@@ -160,7 +165,7 @@ def mettre_a_jour_figure_projection(nb_max_commentaire_par_film: int, min_max_mo
         df_filtre = pd.concat([df_filtre, df_une_ligne])
 
     figure = generer_graphique_projection(df_filtre, perplexite=perplexite, distance=distance,
-                                          selected_method=selected_method)
+                                          methode_projection=metode_projection)
 
     return figure, donnees_knn
 
@@ -232,22 +237,26 @@ def toggle_alert(n_clicks, input_text):
     return n_clicks and (input_text is None or input_text.strip() == '')
 
 
-"""
 @application.callback(
     Output('Graph_evolution', 'figure'),
-    Input('RadioItems_methode_prediction_film', 'n_clicks'),
-    State('RadioItems_methode_prediction_film', 'value'),
+    # Input('RadioItems_methode_prediction_film', 'n_clicks'),
+    Input('RadioItems_temporalite', 'value'),
     State('DateRangePicker_dates_bornes', 'start_date'),
     State('DateRangePicker_dates_bornes', 'end_date')
 )
-def mettre_a_jour_figure_evolution(donnees_partage: dict, methode_selectionnee: str, start_date: str,
+def mettre_a_jour_figure_evolution(methode_selectionnee: str, start_date: str,
                                    end_date: str) -> go.Figure:
-    films = LISTE_FILMS
+    films = RESEAU_NEURONE_MLP.classes_.tolist()
+    # Obtenez le chemin absolu du répertoire du script en cours d'exécution
+    chemin_script = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    chemin_commentaires = os.path.join(chemin_script, 'data', 'commentaire')
     annees_uniques = []
     mois_et_annees_uniques = []
+
     nombres_commentaires = []
 
     for film in films:
+        chemin_fichier = os.path.join(chemin_commentaires, f"{film}.csv")
         df = pd.read_csv(chemin_fichier)
 
         # Convertir la colonne 'date' en datetime en spécifiant le format littéral
@@ -257,18 +266,22 @@ def mettre_a_jour_figure_evolution(donnees_partage: dict, methode_selectionnee: 
         if methode_selectionnee == "années":
             reviews = df.groupby(df['date'].dt.year).size().tolist()
         elif methode_selectionnee == "mois":
-            reviews = df.groupby(df['date'].dt.month).size().tolist()
+            reviews = df.groupby(df['date'].dt.strftime('%m-%Y')).size().tolist()
+            # Assurez-vous que tous les mois ont une valeur dans la liste
+            for mois in pd.date_range(start=start_date, end=end_date, freq='MS').strftime('%m-%Y'):
+                if mois not in df['date'].dt.strftime('%m-%Y').unique():
+                    reviews.append(0)  # Ajoutez zéro pour les mois sans commentaires
+
         nombres_commentaires.append(reviews)
         mois_et_annees = df['date'].dt.strftime('%m-%Y').unique().tolist()
         mois_et_annees_uniques.extend(mois_et_annees)
 
-    print("Nombre de commentaires pour chaque film par année :", nombres_commentaires)
     annees_uniques = sorted(list(set(annees_uniques)))
     mois_et_annees_uniques = sorted(list(set(mois_et_annees_uniques)))
     if methode_selectionnee == "années":
         temps = annees_uniques
     elif methode_selectionnee == "mois":
-        temps = mois_et_annees_uniques
+        temps = sorted(mois_et_annees_uniques, key=lambda x: (int(x.split('-')[1]), int(x.split('-')[0])))
     # Création des traces pour chaque film
     data = []
     for i, film in enumerate(films):
@@ -281,10 +294,9 @@ def mettre_a_jour_figure_evolution(donnees_partage: dict, methode_selectionnee: 
         )
         data.append(trace)
 
-    # Création du layout
     layout = go.Layout(
         title='Evolution du nombre de commentaires par film',
-        xaxis=dict(title='Temps'),
+        xaxis=dict(title='Temps', dtick=5),  # Par exemple, dtick=5 pour afficher une marque tous les 5 éléments
         yaxis=dict(title='Nombre de commentaires')
     )
 
@@ -292,7 +304,22 @@ def mettre_a_jour_figure_evolution(donnees_partage: dict, methode_selectionnee: 
     figure = go.Figure(data=data, layout=layout)
 
     return figure
-"""
+
+
+'''
+@application.callback(
+    Output('evolution-commentaires', 'figure'),
+    [Input('date-picker', 'start_date'),
+     Input('date-picker', 'end_date')]
+    # Ajouter d'autres entrées pour les autres filtres que vous souhaitez utiliser
+)
+def update_figure(start_date, end_date):
+    df = DF_COMMENTAIRE_PLONGEMENT
+    print(df)
+    filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date)]
+    fig = px.line(filtered_df, x='date', y='nombre_commentaires', color='film')
+    return fig
+'''
 
 """
 ===========================================================================

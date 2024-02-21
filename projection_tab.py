@@ -11,7 +11,7 @@ card_projection = dbc.Card(
     [
         html.H4("Choix de la méthode:", className='card-title'),
         dcc.Dropdown(
-            id='Dropdown_method_reduction',
+            id='Dropdown_method_projection',
             options=[
                 {'label': 'Analyse en Composantes Principales (ACP)', 'value': 'ACP'},
                 {'label': 't-Distributed Stochastic Neighbor Embedding (t-SNE)', 'value': 't-SNE'},

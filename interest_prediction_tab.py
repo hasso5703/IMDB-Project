@@ -20,7 +20,7 @@ def style_cell(value):
 card_interest_prediction = dbc.Card(
     html.Div([
         html.H3('Intérêt :'),
-        dbc.Button(id='button_interet', children="Prédire l'intérêt"),
+        dbc.Button(id='button_interet', children="Prédire"),
         dcc.Graph(id='Graph_interet_film', figure={}),
         html.Div([
             html.H3('Taux de bonne prédiction: {:.2f}%'.format(0.85 * 100)),

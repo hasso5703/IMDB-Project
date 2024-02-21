@@ -3,9 +3,10 @@ import pickle
 from typing import Final
 
 import pandas as pd
+from sklearn.neural_network import MLPClassifier
 from tensorflow.keras.models import load_model
 
-from constants import FICHIER_COMMENTAIRE_PLONGEMENT, FICHIER_RESEAU_NEURONE, FICHIER_RESEAU_NEURONE_RATING, FICHIER_MATRICE_CONFUSION
+from constants import FICHIER_COMMENTAIRE_PLONGEMENT, FICHIER_RESEAU_NEURONE, FICHIER_RESEAU_NEURONE_RATING, FICHIER_MATRICE_CONFUSION, FICHIER_RESEAU_NEURONE_MLP
 from language_model import ModeleLangage
 
 """
@@ -53,3 +54,12 @@ TPR = TP / (TP + FN)
 FPR = FP / (FP + TN)
 
 conf_matrix = [[TN, FP], [FN, TP]]
+
+# chargement du MLP pour la classification
+with open(FICHIER_RESEAU_NEURONE_MLP, 'rb') as fichier:
+    dico = pickle.load(fichier)
+
+# assert set(dico['reseau_neurone'].classes_) == set(DF_COMMENTAIRE_PLONGEMENT.titre), "le réseau de neurones ne
+# traite pas cette liste de films"
+
+RESEAU_NEURONE_MLP: Final[MLPClassifier] = dico['reseau_neurone']
