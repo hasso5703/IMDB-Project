@@ -3,8 +3,7 @@ import pandas as pd
 from constants import *
 from language_model import ModeleLangage
 from comments import charger_commentaire, filtrer_commentaire
-from constants import DOSSIER_COMMENTAIRE, FICHIER_COMMENTAIRE_PLONGEMENT
-from utile import sauvegarder_dataframe_csv
+from constants import DOSSIER_COMMENTAIRE
 
 if __name__ == "__main__":
     df_commentaire = charger_commentaire(DOSSIER_COMMENTAIRE)

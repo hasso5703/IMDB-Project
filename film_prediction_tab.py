@@ -2,8 +2,6 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 from constants_app import LISTE_FILMS_INITIAL, LISTE_FILMS, K
 
-# from constants import *
-
 """
 ===========================================================================
 onglet 'Classification'

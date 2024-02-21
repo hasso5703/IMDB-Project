@@ -1,18 +1,13 @@
 import inspect
 from io import StringIO
-from typing import Tuple, Any
-from dash import Dash, Input, Output, State, html, dcc
+from typing import Any
+from dash import Dash, Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import os
-# import pandas as pd
-import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
-# test
 from constants_app import *
 from comments import filtrer_commentaire
-import plotly.express as px
-from datetime import datetime
 
 from chart import generer_graphique_projection, generer_graphique_prediction_film
 from data_tab import *
@@ -209,11 +204,7 @@ def prediction_interet(donnees_partage: dict, n_clicks: int):
     if donnees_partage and n_clicks:
         plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split').to_numpy()
         prediction = RESEAU_NEURONE_RATING.predict(plongement)[0]
-        print(prediction)
-        interet = "oui" if max(prediction) == prediction[1] else "non"
-        prediction_str = "intérêt : " + str(interet)
     else:
-        prediction_str = "intérêt : ..."
         prediction = [0, 0]
     figure = generer_graphique_prediction_film(pd.Series(prediction, index=["non", "oui"]))
 
@@ -305,21 +296,6 @@ def mettre_a_jour_figure_evolution(methode_selectionnee: str, start_date: str,
 
     return figure
 
-
-'''
-@application.callback(
-    Output('evolution-commentaires', 'figure'),
-    [Input('date-picker', 'start_date'),
-     Input('date-picker', 'end_date')]
-    # Ajouter d'autres entrées pour les autres filtres que vous souhaitez utiliser
-)
-def update_figure(start_date, end_date):
-    df = DF_COMMENTAIRE_PLONGEMENT
-    print(df)
-    filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date)]
-    fig = px.line(filtered_df, x='date', y='nombre_commentaires', color='film')
-    return fig
-'''
 
 """
 ===========================================================================
