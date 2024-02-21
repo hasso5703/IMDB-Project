@@ -23,6 +23,7 @@ MODELE_LANGAGE: Final[ModeleLangage] = ModeleLangage()
 # Chargez la liste depuis le fichier binaire
 # with open(str(FICHIER_FILMS_LIST), 'rb') as fichier:
     # FILMS_LIST = pickle.load(fichier)
+K = 3
 
 # Charger le modèle Keras
 RESEAU_NEURONE = load_model(FICHIER_RESEAU_NEURONE)

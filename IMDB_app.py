@@ -123,27 +123,25 @@ def stocker_commentaire_utilisateur(n_click: int, commentaire: str, liste_films:
     Input('Slider_perplexite', 'value'),
     Input('Dropdown_distance', 'value'),
     Input('Store_donnees_partage', 'data'),
-    State('RadioItems_methode_prediction_film', 'value')
+    State('RadioItems_methode_prediction_film', 'value'),
+    State("Slider_k", "value")
 )
 def mettre_a_jour_figure_projection(nb_max_commentaire_par_film: int, min_max_mot: tuple[int, int],
                                     perplexite: int, distance: str,
                                     donnees_partage: dict,
-                                    selected_method: str) -> tuple[Any, Any]:
+                                    selected_method: str, k: int) -> tuple[Any, Any]:
     df_filtre = filtrer_commentaire(DF_COMMENTAIRE_PLONGEMENT,
                                     nb_max_commentaire_par_film=nb_max_commentaire_par_film,
                                     min_max_mot=min_max_mot)
     films_selectionnes = donnees_partage.get("films_selectionnees", [])
-    if films_selectionnes:  # Vérifier si des films sont sélectionnés
+    if films_selectionnes:
         df_filtre = df_filtre.query("titre in @films_selectionnes")
-        # df_filtre[df_filtre['titre'].isin(films_selectionnes)]
     else:
         df_filtre = df_filtre.query("titre in @LISTE_FILMS_INITIAL")
-        # df_filtre[df_filtre['titre'].isin(LISTE_FILMS_INITIAL)]
 
-    if selected_method == "KNN (K-PPV)":
+    if selected_method == "KNN (K-PPV)" and films_selectionnes:
         all_embeddings = df_filtre.loc[:, 'V_000':].values
         labels = df_filtre.titre.values
-        k = 5
         knn_model = KNeighborsClassifier(n_neighbors=k, weights='distance')
         knn_model.fit(all_embeddings, labels)
         df_plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split')
@@ -185,9 +183,8 @@ def mettre_a_jour_figure_prediction(donnees_partage: dict, donnees_knn: dict, se
             somme_probabilites = sum(probabilite)
             probabilite = [prob / somme_probabilites for prob in probabilite]
         else:
-            if donnees_knn:
-                probabilite = donnees_knn.get('probabilites', [])[0]
-                modalite = donnees_knn.get('modalites', [])
+            probabilite = donnees_knn.get('probabilites', [])[0]
+            modalite = donnees_knn.get('modalites', [])
     else:
         NB_TITRE = len(LISTE_FILMS_INITIAL)
         probabilite = [1 / NB_TITRE for i in range(NB_TITRE)]
@@ -204,12 +201,12 @@ def mettre_a_jour_figure_prediction(donnees_partage: dict, donnees_knn: dict, se
     Input("button_interet", "n_clicks")
 )
 def prediction_interet(donnees_partage: dict, n_clicks: int):
-    if donnees_partage and n_clicks > 0:
+    if donnees_partage and n_clicks:
         plongement = pd.read_json(StringIO(donnees_partage['plongement']), orient='split').to_numpy()
         prediction = RESEAU_NEURONE_RATING.predict(plongement)[0]
         print(prediction)
         interet = "oui" if max(prediction) == prediction[1] else "non"
-        prediction_str = "intérêt : "+str(interet)
+        prediction_str = "intérêt : " + str(interet)
     else:
         prediction_str = "intérêt : ..."
         prediction = [0, 0]
@@ -234,11 +231,12 @@ def toggle_alert(selected_films):
 def toggle_alert(n_clicks, input_text):
     return n_clicks and (input_text is None or input_text.strip() == '')
 
+
 """
 @application.callback(
     Output('Graph_evolution', 'figure'),
     Input('RadioItems_methode_prediction_film', 'n_clicks'),
-    Input('RadioItems_methode_prediction_film', 'value'),
+    State('RadioItems_methode_prediction_film', 'value'),
     State('DateRangePicker_dates_bornes', 'start_date'),
     State('DateRangePicker_dates_bornes', 'end_date')
 )
